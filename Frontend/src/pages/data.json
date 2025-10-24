@@ -1,0 +1,68 @@
+[
+    {
+        "author_name": "Connie Song",
+        "created_date": "Jan 23",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*trDoy1gjdrF1HYtOfZ8ZMA.jpeg",
+        "title": "Needle and Thread",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Loose Words",
+        "likes": 16.2,
+        "comments": 185
+    },
+    {
+        "author_name": "Alexander Nguyen",
+        "created_date": "Jun 1",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*-tpw_l_dLxBYJJ0JhHnf8A.png",
+        "title": "The resume that got a software engineer a $300,000 job at Google.",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Level Up Coding",
+        "likes": 13.1,
+        "comments": 179
+    },
+    {
+        "author_name": "Connie Song",
+        "created_date": "Jan 23",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*trDoy1gjdrF1HYtOfZ8ZMA.jpeg",
+        "title": "Needle and Thread",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Loose Words",
+        "likes": 16.2,
+        "comments": 185
+    },
+    {
+        "author_name": "Connie Song",
+        "created_date": "Jan 23",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*trDoy1gjdrF1HYtOfZ8ZMA.jpeg",
+        "title": "Needle and Thread",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Loose Words",
+        "likes": 16.2,
+        "comments": 185
+    },
+    {
+        "author_name": "Alexander Nguyen",
+        "created_date": "Jun 1",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*-tpw_l_dLxBYJJ0JhHnf8A.png",
+        "title": "The resume that got a software engineer a $300,000 job at Google.",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Level Up Coding",
+        "likes": 13.1,
+        "comments": 179
+    },
+    {
+        "author_name": "Connie Song",
+        "created_date": "Jan 23",
+        "avatar_url": "/placeholder-user.jpg",
+        "image_url": "https://miro.medium.com/v2/resize:fit:1100/format:webp/1*trDoy1gjdrF1HYtOfZ8ZMA.jpeg",
+        "title": "Needle and Thread",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl nec ultricies lacinia, nissf fsfdsf dsfss...",
+        "publication_name": "Loose Words",
+        "likes": 16.2,
+        "comments": 185
+    }
+]
