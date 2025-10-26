@@ -81,8 +81,8 @@
      /* Hide scrollbar for IE, Edge and Firefox */
      /* Hide scrollbar for IE, Edge and   */
       .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefoxx */
+          -ms-overflow-style: none;  /* IE and Edg */
+          scrollbar-width: none;  /* Firefox */
     }
   }
 
