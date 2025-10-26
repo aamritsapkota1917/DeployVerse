@@ -1,11 +1,9 @@
 name: "check_commit_lint"
 
-on: [push]
-
-# on:
-  # push:
-    # branches:
-      # - feature/**
+on:
+  push:
+    branches:
+      - feature/**
 
 jobs:
   commitlint:
