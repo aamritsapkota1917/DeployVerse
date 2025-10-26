@@ -51,7 +51,7 @@ jobs:
         run: npm run lint
 
       - name: Trivy Filesystem Scan (Backend)
-        uses: aquasecurity/setup-trivy@v0.2.0
+        uses: aquasecurity/setup-trivy@v0.12.1
         with:
           scan-type: fs
           path: Backend
@@ -80,7 +80,7 @@ jobs:
         run: npm run lint
 
       - name: Trivy Filesystem Scan (Frontend)
-        uses: aquasecurity/setup-trivy@v0.2.0
+        uses: aquasecurity/setup-trivy@v0.12.1
         with:
           scan-type: fs
           path: Frontend
