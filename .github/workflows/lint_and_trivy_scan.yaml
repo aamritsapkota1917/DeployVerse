@@ -1,0 +1,91 @@
+name: Lint and Sonar Report
+
+permissions:
+  contents: write
+  pull-requests: read
+
+on:
+  pull_request:
+    branches: ["Dev"]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: |
+            backend:
+              - 'Backend/**'
+            frontend:
+              - 'Frontend/**'
+
+  lint-and-scan-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: npm install
+
+      - name: Lint Backend
+        working-directory: Backend
+        run: npm run lint
+
+      - name: Trivy Filesystem Scan (Backend)
+        uses: aquasecurity/trivy-action@v2
+        with:
+          scan-type: fs
+          path: Backend
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+  lint-and-scan-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "yarn"
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: yarn lint
+
+      - name: Trivy Filesystem Scan (Frontend)
+        uses: aquasecurity/trivy-action@v2
+        with:
+          scan-type: fs
+          path: frontend
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
