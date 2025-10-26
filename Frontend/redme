@@ -9,4 +9,3 @@ git add .
  gh pr create --base main --head Dev --title "PR:  dev to main " --body "Some fixes"
  gh pr merge $(gh pr list --limit 1 --json number --jq '.[0].number') --merge
    
-   yo  yoy o  jho uhuoip 
