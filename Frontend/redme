@@ -1,0 +1,15 @@
+trivy scanner 
+
+
+git add .
+ git commit -m "feat(CSS): add fix index css1  "
+ git push -u origin feature/post-blog-data
+ gh pr create --base Dev --head "$(git branch --show-current)" --title "pr from feaure to dev" --body "some fixes" 
+ gh pr merge $(gh pr list --limit 1 --json number --jq '.[0].number') --merge
+ gh pr create --base main --head Dev --title "PR:  dev to main " --body "Some fixes"
+ gh pr merge $(gh pr list --limit 1 --json number --jq '.[0].number') --merge
+   
+
+
+
+nkbh iljhuoh o;uh;ouh iu iu 

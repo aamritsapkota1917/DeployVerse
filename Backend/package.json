@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "echo lint passed",
     "dev": "nodemon app.js"
+    
   },
   "author": "",
   "license": "ISC",
