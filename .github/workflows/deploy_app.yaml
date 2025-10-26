@@ -1,0 +1,124 @@
+name: CD Workflow - Deploy by Manual Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Enter Docker image tag to deploy (e.g., v1.0.0, latest)"
+        required: true
+        default: "latest"
+      deploy_backend:
+        description: "Deploy Backend to EC2?"
+        required: true
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: "Deploy Frontend to S3?"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-backend:
+    if: ${{ inputs.deploy_backend == true }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get EC2 Instance IP
+        id: get-ec2-ip
+        run: |
+          EC2_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:project,Values=deployverse" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          if [ "$EC2_IP" == "None" ] || [ -z "$EC2_IP" ]; then
+            echo "No running EC2 instance found with tag project=deployverse"
+            exit 1
+          fi
+
+          echo "ec2_ip=$EC2_IP" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ steps.get-ec2-ip.outputs.ec2_ip }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Backend to EC2
+        env:
+          EC2_IP: ${{ steps.get-ec2-ip.outputs.ec2_ip }}
+          USER_NAME: ${{ secrets.EC2_USER_NAME }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          TAG: ${{ inputs.tag }}
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
+        run: |
+          ssh -i ~/.ssh/deploy_key ${USER_NAME}@${EC2_IP} << EOF
+            set -e
+            
+            mkdir -p /home/${USER_NAME}/deployverse-backend
+            echo "${BACKEND_ENV}" > /home/${USER_NAME}/deployverse-backend/.env
+
+            docker pull ${DOCKER_USERNAME}/deployverse-backend:${TAG}
+
+            if [ "$(docker ps -aq -f name=deployverse-backend)" ]; then
+              docker stop deployverse-backend || true
+              docker rm deployverse-backend || true
+            fi
+
+            docker run -d \
+              --name deployverse-backend \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              --env-file /home/${USER_NAME}/deployverse-backend/.env \
+              ${DOCKER_USERNAME}/deployverse-backend:${TAG}
+
+            docker image prune -af --filter "until=72h" || true
+          EOF
+
+  deploy-frontend:
+    if: ${{ inputs.deploy_frontend == true }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install Dependencies
+        working-directory: Frontend
+        run: npm install
+
+      - name: Build Frontend
+        working-directory: Frontend
+        env:
+          VITE_SERVER_URL: ${{ secrets.VITE_SERVER_URL }}
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Deploy to S3
+        working-directory: Frontend
+        run: |
+          aws s3 rm s3://${{ secrets.S3_BUCKET_NAME }} --recursive
+          aws s3 cp ./build s3://${{ secrets.S3_BUCKET_NAME }} --recursive
