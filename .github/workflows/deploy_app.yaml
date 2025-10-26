@@ -1,4 +1,4 @@
-name: CD Workflow - Deploy by Manual Trigger
+name: DEPLOY APP - Deploy by Manual Trigger
 
 on:
   workflow_dispatch:
@@ -121,4 +121,4 @@ jobs:
         working-directory: Frontend
         run: |
           aws s3 rm s3://${{ secrets.S3_BUCKET_NAME }} --recursive
-          aws s3 cp ./build s3://${{ secrets.S3_BUCKET_NAME }} --recursive
+          aws s3 cp ./dist s3://${{ secrets.S3_BUCKET_NAME }} --recursive
