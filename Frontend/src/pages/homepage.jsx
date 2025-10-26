@@ -31,7 +31,7 @@ const Homepage = () => {
         <header className="flex  justify-around h-16 px-4 md:px-6 bg-background border-b">
 
         <Link to="/" className="flex items-center gap-2" >
-         <p className=" hidden text-3xl font-bold md:block">Meduim</p>
+         <p className=" hidden text-3xl font-bold md:block">DeployVerse</p>
           
           </Link>
 
