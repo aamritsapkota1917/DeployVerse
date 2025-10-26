@@ -6,7 +6,7 @@ const Logo = () => {
       <div className="flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2">
           <MediumIcon className="h-7 w-7" />
-          <span className=" hidden text-2xl font-semibold md:block">Meduim</span>
+          <span className=" hidden text-2xl font-semibold md:block">DeployVerse</span>
         </Link>
       </div>
     </>
