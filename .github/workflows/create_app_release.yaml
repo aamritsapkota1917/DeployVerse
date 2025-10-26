@@ -1,4 +1,4 @@
-name: Create Release
+name: Create App Release
 
 permissions:
   contents: write
@@ -9,6 +9,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "Backend/**"
+      - "Frontend/**"
 
 jobs:
   create-release:
@@ -25,10 +28,13 @@ jobs:
       - name: Get Latest Tag
         id: get-latest-tag
         run: |
-          # Get the latest tag, or use v0.0.0 if no tags exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Get the latest app tag (exclude infra- tags)
+          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "infra-" | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest tag: $LATEST_TAG"
+          echo "Latest app tag: $LATEST_TAG"
 
       - name: Determine Version Bump
         id: semver
@@ -41,14 +47,14 @@ jobs:
           # Split version into major.minor.patch
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 
-          # Get commits since last tag
+          # Get commits since last tag (ONLY from Backend and Frontend)
           if [ "$LATEST_TAG" == "v0.0.0" ]; then
-            COMMITS=$(git log --pretty=format:"%s" HEAD)
+            COMMITS=$(git log --pretty=format:"%s" HEAD -- Backend/ Frontend/)
           else
-            COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD)
+            COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD -- Backend/ Frontend/)
           fi
 
-          echo "Commits since last release:"
+          echo "App commits since last release:"
           echo "$COMMITS"
 
           # Check for version bump type
@@ -80,7 +86,7 @@ jobs:
             PATCH=$((PATCH + 1))
             BUMP_TYPE="patch"
           else
-            echo "No version bump needed (no feat/fix commits)"
+            echo "No version bump needed (no feat/fix commits for app)"
             echo "version_bumped=false" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -135,7 +141,7 @@ jobs:
           # Other changes
           OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "^feat(\(.+\))?:|^fix(\(.+\))?:" || true)
           if [ -n "$OTHER_COMMITS" ]; then
-            CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n"
+            CHANGELOG="${CHANGELOG}### Other Changes\n"
             while IFS= read -r commit; do
               if [ -n "$commit" ]; then
                 CHANGELOG="${CHANGELOG}- ${commit}\n"
@@ -168,7 +174,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: '${{ steps.semver.outputs.new_version }}',
-              name: 'Release ${{ steps.semver.outputs.new_version }}',
+              name: 'Application Release ${{ steps.semver.outputs.new_version }}',
               body: changelog,
               draft: false,
               prerelease: false
@@ -207,6 +213,6 @@ jobs:
     steps:
       - name: Release Summary
         run: |
-          echo "🎉 Release ${{ needs.create-release.outputs.new_version }} created successfully!"
+          echo "🎉 Application Release ${{ needs.create-release.outputs.new_version }} created successfully!"
           echo "📦 Backend Docker image tagged with ${{ needs.create-release.outputs.new_version }}"
           echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.new_version }}"

@@ -73,7 +73,7 @@ resource "aws_instance" "my_ec2" {
           cat > /etc/nginx/conf.d/deployverse.conf <<NGINXCONF
           server {
               listen 80;
-              server_name ${backend_domain_name};
+              server_name ${var.backend_domain_name};
 
               location / {
                   proxy_pass http://127.0.0.1:5000;
@@ -95,7 +95,7 @@ resource "aws_instance" "my_ec2" {
           sleep 20
 
           # Obtain SSL certificate with redirect
-          certbot --nginx -d ${backend_domain_name} \
-            --non-interactive --agree-tos -m ${domain_mail} --redirect
+          certbot --nginx -d ${var.backend_domain_name} \
+            --non-interactive --agree-tos -m ${var.domain_mail} --redirect
           EOF
 }
