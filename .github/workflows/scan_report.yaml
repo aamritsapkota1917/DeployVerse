@@ -1,0 +1,169 @@
+name: Docker Scan Report on PR
+permissions:
+    pull-requests: write
+    contents: read
+    actions: read
+
+on:
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    fetch-trivy-results:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Find Latest Dev Branch Workflow Run
+              id: find-run
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        workflow_id: 'docker-build-scan.yml', // Replace with your actual workflow filename
+                        branch: 'Dev',
+                        status: 'completed',
+                        per_page: 1
+                      });
+
+                      if (runs.workflow_runs.length === 0) {
+                        core.setFailed('No completed workflow runs found on Dev branch');
+                        return;
+                      }
+
+                      const runId = runs.workflow_runs[0].id;
+                      core.setOutput('run_id', runId);
+                      console.log(`Found workflow run: ${runId}`);
+
+            - name: Download Backend Trivy Artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: trivy-backend-scan
+                  path: scans/backend
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  run-id: ${{ steps.find-run.outputs.run_id }}
+              continue-on-error: true
+
+            - name: Download Frontend Trivy Artifact
+              uses: actions/download-artifact@v4
+              with:
+                  name: trivy-frontend-scan
+                  path: scans/frontend
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  run-id: ${{ steps.find-run.outputs.run_id }}
+              continue-on-error: true
+
+            - name: Check if artifacts exist
+              id: check-artifacts
+              run: |
+                  BACKEND_EXISTS=false
+                  FRONTEND_EXISTS=false
+
+                  if [ -f "scans/backend/trivy-backend-results.txt" ]; then
+                    BACKEND_EXISTS=true
+                  fi
+
+                  if [ -f "scans/frontend/trivy-frontend-results.txt" ]; then
+                    FRONTEND_EXISTS=true
+                  fi
+
+                  echo "backend_exists=$BACKEND_EXISTS" >> $GITHUB_OUTPUT
+                  echo "frontend_exists=$FRONTEND_EXISTS" >> $GITHUB_OUTPUT
+
+            - name: Parse scan results
+              id: parse
+              run: |
+                  if [ "${{ steps.check-artifacts.outputs.backend_exists }}" == "true" ]; then
+                    echo "BACKEND_RESULTS<<EOF" >> $GITHUB_ENV
+                    cat scans/backend/trivy-backend-results.txt >> $GITHUB_ENV
+                    echo "EOF" >> $GITHUB_ENV
+                  else
+                    echo "BACKEND_RESULTS=⚠️ No backend scan results found for latest Dev branch build" >> $GITHUB_ENV
+                  fi
+
+                  if [ "${{ steps.check-artifacts.outputs.frontend_exists }}" == "true" ]; then
+                    echo "FRONTEND_RESULTS<<EOF" >> $GITHUB_ENV
+                    cat scans/frontend/trivy-frontend-results.txt >> $GITHUB_ENV
+                    echo "EOF" >> $GITHUB_ENV
+                  else
+                    echo "FRONTEND_RESULTS=⚠️ No frontend scan results found for latest Dev branch build" >> $GITHUB_ENV
+                  fi
+
+            - name: Comment Trivy Results on PR
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const backend = process.env.BACKEND_RESULTS || "⚠️ No scan artifact found";
+                      const frontend = process.env.FRONTEND_RESULTS || "⚠️ No scan artifact found";
+                      const runId = '${{ steps.find-run.outputs.run_id }}';
+
+                      const body = `## 🛡️ Docker Image Security Scan Report (Trivy)
+
+                      **Source:** Latest build from \`Dev\` branch (Run #${runId})
+
+                      ### 🔹 Backend Docker Image
+                      <details>
+                      <summary>Click to view scan results</summary>
+
+                      \`\`\`
+                      ${backend}
+                      \`\`\`
+
+                      </details>
+
+                      ---
+
+                      ### 🔹 Frontend Docker Image
+                      <details>
+                      <summary>Click to view scan results</summary>
+
+                      \`\`\`
+                      ${frontend}
+                      \`\`\`
+
+                      </details>
+
+                      ---
+
+                      **Scan Configuration:**
+                      - ✅ Scans: Vulnerabilities, Secrets, Misconfigurations
+                      - ⚠️ Severity Levels: CRITICAL & HIGH only
+                      - 🔗 [View Full Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${runId})
+                      `;
+
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body,
+                      });
+
+            - name: Check for Critical Vulnerabilities
+              if: steps.check-artifacts.outputs.backend_exists == 'true' || steps.check-artifacts.outputs.frontend_exists == 'true'
+              run: |
+                  VULN_FOUND=false
+
+                  if [ -f "scans/backend/trivy-backend-results.txt" ]; then
+                    if grep -qiE "CRITICAL|HIGH" scans/backend/trivy-backend-results.txt; then
+                      echo "❌ CRITICAL or HIGH vulnerabilities found in Backend image!"
+                      VULN_FOUND=true
+                    fi
+                  fi
+
+                  if [ -f "scans/frontend/trivy-frontend-results.txt" ]; then
+                    if grep -qiE "CRITICAL|HIGH" scans/frontend/trivy-frontend-results.txt; then
+                      echo "❌ CRITICAL or HIGH vulnerabilities found in Frontend image!"
+                      VULN_FOUND=true
+                    fi
+                  fi
+
+                  if [ "$VULN_FOUND" = true ]; then
+                    echo "⚠️ Blocking PR due to security vulnerabilities"
+                    exit 1
+                  else
+                    echo "✅ No critical vulnerabilities found"
+                  fi
