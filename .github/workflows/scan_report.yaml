@@ -7,6 +7,9 @@ permissions:
 on:
   pull_request:
     branches: ["main"]
+    paths:
+      - "Frontend/**"
+      - "Backend/**"
 
 jobs:
   fetch-trivy-results:

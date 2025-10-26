@@ -5,6 +5,7 @@ on:
     branches:
       - feature/**
 
+
 jobs:
   commitlint:
     runs-on: ubuntu-latest

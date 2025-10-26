@@ -84,7 +84,7 @@ module "route53_ec2" {
   evaluate_target_health = false
 
   record_type = "A"
-  records     = [module.ec2.instance_public_ip]
+  records     = [module.ec2.public_ip]
   ttl         = 300
 
   depends_on = [module.ec2]
