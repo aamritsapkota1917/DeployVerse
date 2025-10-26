@@ -2,7 +2,7 @@ name: "check_commit_lint"
 on:
   push:
     branches:
-      - "feature/**"
+      - feature/**
 
 jobs:
   commitlint:
