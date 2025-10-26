@@ -1,0 +1,71 @@
+name: Build, Scan and Push Docker Images
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - Dev
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get Previous Commit
+        id: prev-commit
+        run: echo "PREV_COMMIT=$(git rev-parse HEAD^1)" >> $GITHUB_ENV
+      - name: Detect Changed Files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ env.PREV_COMMIT }}
+          filters: |
+            backend:
+              - 'Backend/**'
+            frontend:
+              - 'Frontend/**'
+
+  build-and-scan-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: Backend
+          file: Backend/Dockerfile
+          push: true
+          tags: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:dev-${{ github.run_number }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:dev-latest
+
+  build-and-scan-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: Frontend
+          file: Frontend/Dockerfile
+          push: true
+          tags: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-frontend:dev-${{ github.run_number }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-frontend:dev-latest
