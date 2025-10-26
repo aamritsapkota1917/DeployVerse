@@ -1,0 +1,118 @@
+name: Deploy Terraform Infrastructure
+
+permissions:
+    contents: read
+    id-token: write
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Infrastructure version tag (e.g., v1.0.0) or "latest"'
+                required: true
+                default: "latest"
+                type: string
+            terraform_action:
+                description: "Terraform action to perform"
+                required: true
+                default: "apply"
+                type: choice
+                options:
+                    - apply
+                    - destroy
+
+env:
+    TF_VERSION: "1.12.2"
+    WORKING_DIR: "terraform-deploy"
+    AWS_REGION: "ap-south-1"
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Determine Tag Version
+              id: get-tag
+              run: |
+                  INPUT_TAG="${{ github.event.inputs.tag }}"
+
+                  if [ "$INPUT_TAG" == "latest" ]; then
+                    # Get the latest tag for Infrastructure releases
+                    LATEST_TAG=$(git tag -l "infra-v*" --sort=-v:refname | head -n 1)
+                    
+                    if [ -z "$LATEST_TAG" ]; then
+                      echo "Error: No infrastructure tags found"
+                      exit 1
+                    fi
+                    
+                    DEPLOY_TAG="$LATEST_TAG"
+                    echo "Using latest tag: $DEPLOY_TAG"
+                  else
+                    # Auto-append 'infra-' prefix if not present
+                    if [[ "$INPUT_TAG" == infra-* ]]; then
+                      DEPLOY_TAG="$INPUT_TAG"
+                    else
+                      DEPLOY_TAG="infra-$INPUT_TAG"
+                    fi
+                    
+                    # Verify tag exists
+                    if ! git tag -l "$DEPLOY_TAG" | grep -q "$DEPLOY_TAG"; then
+                      echo "Error: Tag $DEPLOY_TAG does not exist"
+                      exit 1
+                    fi
+                    
+                    echo "Using specified tag: $DEPLOY_TAG"
+                  fi
+
+                  echo "deploy_tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
+                  echo "Deploying infrastructure version: $DEPLOY_TAG"
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Download Infrastructure from S3
+              run: |
+                  DEPLOY_TAG="${{ steps.get-tag.outputs.deploy_tag }}"
+                  S3_BUCKET="${{ secrets.TERRAFORM_BUCKET_NAME }}"
+                  RELEASE_PATH="releases/$DEPLOY_TAG"
+                  ZIP_NAME="infra-${DEPLOY_TAG}.zip"
+
+                  echo "Downloading from: s3://$S3_BUCKET/$RELEASE_PATH/$ZIP_NAME"
+
+                  # Download the zip file
+                  aws s3 cp "s3://$S3_BUCKET/$RELEASE_PATH/$ZIP_NAME" "$ZIP_NAME"
+
+                  # Create working directory and extract
+                  mkdir -p "$WORKING_DIR"
+                  unzip -q "$ZIP_NAME" -d "$WORKING_DIR"
+
+                  echo "Infrastructure extracted to $WORKING_DIR"
+                  ls -la "$WORKING_DIR"
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: ${{ env.TF_VERSION }}
+
+            - name: Terraform Init
+              working-directory: ${{ env.WORKING_DIR }}
+              run: terraform init
+
+            - name: Terraform Apply
+              if: github.event.inputs.terraform_action == 'apply'
+              working-directory: ${{ env.WORKING_DIR }}
+              run: terraform apply -auto-approve tfplan
+
+            - name: Terraform Destroy
+              if: github.event.inputs.terraform_action == 'destroy'
+              working-directory: ${{ env.WORKING_DIR }}
+              run: terraform destroy -auto-approve
+              env:
+                  TF_VAR_environment: production
