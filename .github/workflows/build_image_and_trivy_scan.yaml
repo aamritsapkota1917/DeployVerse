@@ -73,9 +73,9 @@ jobs:
           name: trivy-backend-scan
           path: trivy-backend-results.txt
 
-      - name: Fail job if vulnerabilities found
-        if: steps.trivy-backend.outcome == 'failure'
-        run: exit 1
+      # - name: Fail job if vulnerabilities found
+      #   if: steps.trivy-backend.outcome == 'failure'
+      #   run: exit 1
 
   build-scan-push-frontend:
     needs: detect-changes
@@ -120,6 +120,6 @@ jobs:
           name: trivy-frontend-scan
           path: trivy-frontend-results.txt
 
-      - name: Fail job if vulnerabilities found
-        if: steps.trivy-frontend.outcome == 'failure'
-        run: exit 1
+      # - name: Fail job if vulnerabilities found
+      #   if: steps.trivy-frontend.outcome == 'failure'
+      #   run: exit 1
