@@ -18,10 +18,10 @@ const Homepage = () => {
  
 
 
-  if (data && !error)
-  {
-    return <Dashboard/>
-  }
+  // if (data && !error)
+  // {
+  // }
+  return <Dashboard/>
  
 
 
