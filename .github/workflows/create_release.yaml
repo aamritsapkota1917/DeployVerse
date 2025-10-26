@@ -1,0 +1,212 @@
+name: Create Release
+
+permissions:
+  contents: write
+  pull-requests: read
+  packages: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.semver.outputs.new_version }}
+      changelog: ${{ steps.semver.outputs.changelog }}
+      version_bumped: ${{ steps.semver.outputs.version_bumped }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Latest Tag
+        id: get-latest-tag
+        run: |
+          # Get the latest tag, or use v0.0.0 if no tags exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Determine Version Bump
+        id: semver
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+
+          # Remove 'v' prefix for version manipulation
+          CURRENT_VERSION=${LATEST_TAG#v}
+
+          # Split version into major.minor.patch
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # Get commits since last tag
+          if [ "$LATEST_TAG" == "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"%s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD)
+          fi
+
+          echo "Commits since last release:"
+          echo "$COMMITS"
+
+          # Check for version bump type
+          BREAKING=false
+          FEATURE=false
+          FIX=false
+
+          while IFS= read -r commit; do
+            if echo "$commit" | grep -qiE "^feat!:|^fix!:|BREAKING CHANGE:"; then
+              BREAKING=true
+            elif echo "$commit" | grep -qiE "^feat:"; then
+              FEATURE=true
+            elif echo "$commit" | grep -qiE "^fix:"; then
+              FIX=true
+            fi
+          done <<< "$COMMITS"
+
+          # Determine version bump
+          if [ "$BREAKING" = true ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            BUMP_TYPE="major"
+          elif [ "$FEATURE" = true ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            BUMP_TYPE="minor"
+          elif [ "$FIX" = true ]; then
+            PATCH=$((PATCH + 1))
+            BUMP_TYPE="patch"
+          else
+            echo "No version bump needed (no feat/fix commits)"
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "version_bumped=true" >> $GITHUB_OUTPUT
+
+          echo "Version bump: $LATEST_TAG → $NEW_VERSION ($BUMP_TYPE)"
+
+          # Generate changelog
+          CHANGELOG="## What's Changed\n\n"
+
+          # Breaking changes
+          BREAKING_COMMITS=$(echo "$COMMITS" | grep -iE "^feat!:|^fix!:|BREAKING CHANGE:" || true)
+          if [ -n "$BREAKING_COMMITS" ]; then
+            CHANGELOG="${CHANGELOG}### BREAKING CHANGES\n"
+            while IFS= read -r commit; do
+              if [ -n "$commit" ]; then
+                CHANGELOG="${CHANGELOG}- ${commit}\n"
+              fi
+            done <<< "$BREAKING_COMMITS"
+            CHANGELOG="${CHANGELOG}\n"
+          fi
+
+          # Features
+          FEATURE_COMMITS=$(echo "$COMMITS" | grep -iE "^feat:" | grep -viE "^feat!:" || true)
+          if [ -n "$FEATURE_COMMITS" ]; then
+            CHANGELOG="${CHANGELOG}### Features\n"
+            while IFS= read -r commit; do
+              if [ -n "$commit" ]; then
+                CHANGELOG="${CHANGELOG}- ${commit}\n"
+              fi
+            done <<< "$FEATURE_COMMITS"
+            CHANGELOG="${CHANGELOG}\n"
+          fi
+
+          # Bug fixes
+          FIX_COMMITS=$(echo "$COMMITS" | grep -iE "^fix:" | grep -viE "^fix!:" || true)
+          if [ -n "$FIX_COMMITS" ]; then
+            CHANGELOG="${CHANGELOG}### Bug Fixes\n"
+            while IFS= read -r commit; do
+              if [ -n "$commit" ]; then
+                CHANGELOG="${CHANGELOG}- ${commit}\n"
+              fi
+            done <<< "$FIX_COMMITS"
+            CHANGELOG="${CHANGELOG}\n"
+          fi
+
+          # Other changes
+          OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "^feat:|^fix:" || true)
+          if [ -n "$OTHER_COMMITS" ]; then
+            CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n"
+            while IFS= read -r commit; do
+              if [ -n "$commit" ]; then
+                CHANGELOG="${CHANGELOG}- ${commit}\n"
+              fi
+            done <<< "$OTHER_COMMITS"
+          fi
+
+          # Save changelog to file (for multi-line output)
+          echo -e "$CHANGELOG" > changelog.md
+          echo "changelog_file=changelog.md" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        if: steps.semver.outputs.version_bumped == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ steps.semver.outputs.new_version }} -m "Release ${{ steps.semver.outputs.new_version }}"
+          git push origin ${{ steps.semver.outputs.new_version }}
+
+      - name: Create GitHub Release
+        if: steps.semver.outputs.version_bumped == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const changelog = fs.readFileSync('changelog.md', 'utf8');
+
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: '${{ steps.semver.outputs.new_version }}',
+              name: 'Release ${{ steps.semver.outputs.new_version }}',
+              body: changelog,
+              draft: false,
+              prerelease: false
+            });
+
+            console.log(`Release created: ${release.html_url}`);
+
+  build-and-tag-docker-images:
+    needs: create-release
+    if: needs.create-release.outputs.version_bumped == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: Backend
+          file: Backend/Dockerfile
+          push: true
+          tags: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:${{ needs.create-release.outputs.new_version }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:latest
+
+  notify-release:
+    needs: [create-release, build-and-tag-docker-images]
+    if: needs.create-release.outputs.version_bumped == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Summary
+        run: |
+          echo "🎉 Release ${{ needs.create-release.outputs.new_version }} created successfully!"
+          echo "📦 Backend Docker image tagged with ${{ needs.create-release.outputs.new_version }}"
+          echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.new_version }}"

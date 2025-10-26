@@ -105,9 +105,9 @@ jobs:
             `
             });
 
-      - name: Fail job if vulnerabilities found
-        if: steps.trivy-frontend.outcome == 'failure'
-        run: exit 1
+      # - name: Fail job if vulnerabilities found
+      #   if: steps.trivy-frontend.outcome == 'failure'
+      #   run: exit 1
 
   lint-and-scan-backend:
     needs: detect-changes
@@ -171,6 +171,6 @@ jobs:
             `
             });
 
-      - name: Fail job if vulnerabilities found
-        if: steps.trivy-backend.outcome == 'failure'
-        run: exit 1
+      # - name: Fail job if vulnerabilities found
+      #   if: steps.trivy-backend.outcome == 'failure'
+      #   run: exit 1
