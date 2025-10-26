@@ -1,28 +1,28 @@
-name: Build, Scan and Push Docker Images
+name: Lint and Trivy Report
+
 permissions:
   contents: write
+  pull-requests: write
+
 on:
-  push:
-    branches:
-      - Dev
+  pull_request:
+    branches: ["Dev"]
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Get Previous Commit
-        id: prev-commit
-        run: echo "PREV_COMMIT=$(git rev-parse HEAD^1)" >> $GITHUB_ENV
-      - name: Detect Changed Files
+
+      - uses: dorny/paths-filter@v3
         id: filter
-        uses: dorny/paths-filter@v3
         with:
-          base: ${{ env.PREV_COMMIT }}
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: |
             backend:
@@ -30,96 +30,147 @@ jobs:
             frontend:
               - 'Frontend/**'
 
-  build-scan-push-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and Push Backend Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: Backend
-          file: Backend/Dockerfile
-          push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:dev-${{ github.run_number }}
-            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:dev-latest
-
-      - name: Trivy Scan Backend Docker Image
-        id: trivy-backend
-        uses: aquasecurity/trivy-action@0.30.0
-        continue-on-error: true
-        with:
-          image-ref: docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-backend:dev-${{ github.run_number }}
-          format: table
-          scanners: vuln,secret,misconfig
-          severity: CRITICAL,HIGH
-          exit-code: 1
-          output: trivy-backend-results.txt
-
-      - name: Upload Trivy Backend Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-backend-scan
-          path: trivy-backend-results.txt
-
-      - name: Fail job if vulnerabilities found
-        if: steps.trivy-backend.outcome == 'failure'
-        run: exit 1
-
-  build-scan-push-frontend:
+  lint-and-scan-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          node-version: "lts/*"
 
-      - name: Build and Push Frontend Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: Frontend
-          file: Frontend/Dockerfile
-          push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-frontend:dev-${{ github.run_number }}
-            docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-frontend:dev-latest
+      - name: Install dependencies
+        working-directory: Frontend
+        run: npm install
 
-      - name: Trivy Scan Frontend Docker Image
+      - name: Lint Frontend
+        working-directory: Frontend
+        run: npm run lint
+
+      - name: Trivy Scan Frontend
         id: trivy-frontend
         uses: aquasecurity/trivy-action@0.30.0
         continue-on-error: true
         with:
-          image-ref: docker.io/${{ secrets.DOCKER_USERNAME }}/deployverse-frontend:dev-${{ github.run_number }}
-          format: table
-          scanners: vuln,secret,misconfig
-          severity: CRITICAL,HIGH
+          scan-type: "fs"
+          scan-ref: "Frontend/"
+          format: "table"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
           exit-code: 1
-          output: trivy-frontend-results.txt
+          output: "trivy-frontend-results.txt"
 
-      - name: Upload Trivy Frontend Artifact
+      - name: Upload Trivy Results as Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-frontend-scan
           path: trivy-frontend-results.txt
 
+      - name: Comment Trivy Results on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const trivyResults = fs.readFileSync('trivy-frontend-results.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Frontend Security Scan Results (Trivy)
+
+            <details>
+            <summary>📊 Click to view scan results</summary>
+
+            \`\`\`
+            ${trivyResults}
+            \`\`\`
+
+            </details>
+
+            **Scan Details:**
+            - 📁 Directory: \`Frontend/\`
+            - 🔎 Scanners: Vulnerabilities, Secrets, Misconfigurations
+            - ⚠️ Severity: CRITICAL, HIGH
+            `
+            });
+
       - name: Fail job if vulnerabilities found
         if: steps.trivy-frontend.outcome == 'failure'
+        run: exit 1
+
+  lint-and-scan-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy Scan Backend
+        id: trivy-backend
+        uses: aquasecurity/trivy-action@0.30.0
+        continue-on-error: true
+        with:
+          scan-type: "fs"
+          scan-ref: "Backend/"
+          format: "table"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
+          exit-code: 1
+          output: "trivy-backend-results.txt"
+
+      - name: Upload Trivy Results as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-backend-scan
+          path: trivy-backend-results.txt
+
+      - name: Comment Trivy Results on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const trivyResults = fs.readFileSync('trivy-backend-results.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Backend Security Scan Results (Trivy)
+
+            <details>
+            <summary>📊 Click to view scan results</summary>
+
+            \`\`\`
+            ${trivyResults}
+            \`\`\`
+
+            </details>
+
+            **Scan Details:**
+            - 📁 Directory: \`Backend/\`
+            - 🔎 Scanners: Vulnerabilities, Secrets, Misconfigurations
+            - ⚠️ Severity: CRITICAL, HIGH
+            `
+            });
+
+      - name: Fail job if vulnerabilities found
+        if: steps.trivy-backend.outcome == 'failure'
         run: exit 1
