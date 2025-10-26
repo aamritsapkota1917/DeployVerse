@@ -1,0 +1,29 @@
+name: "check_commit_lint"
+on:
+  push:
+    branches:
+      - "feature/**"
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: setup nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install commitlint
+        run: npm install -D @commitlint/cli @commitlint/config-conventional
+
+      - name: add commitlint config
+        run: |
+          echo "module.exports = { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
+
+      - name: validate current commit
+        if: github.event_name == 'push'
+        run: npx commitlint --last --verbose

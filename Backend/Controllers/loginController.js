@@ -56,9 +56,9 @@ export const callback = async (req, res) => {
         path: "/",
         httpOnly: true,
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-        sameSite: "lax", // Set this according to your needs, 'lax' is a good default
+        sameSite: "none", // Set this according to your needs, 'lax' is a good default
         secure: process.env.NODE_ENV === "production", // Set secure to true in production
-        domain: "localhost",
+        domain: process.env.DOMAIN,
       });
 
       // res
@@ -75,7 +75,7 @@ export const callback = async (req, res) => {
       throw new Error("Error while registering user");
     }
   } catch (error) {
-    // console.error("Error during OAuth process:", error.message);
+     console.log(error);
     res.status(500).send("Internal Server Error");
   }
 };
@@ -134,9 +134,9 @@ export const verifyUser = asyncHandler(async (req, res) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "lax", // Set this according to your needs, 'lax' is a good default
+    sameSite: "none", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: "localhost",
+    domain: process.env.DOMAIN,
   });
   // res
   //   .status(200)
@@ -195,9 +195,9 @@ export const login = asyncHandler(async (req, res, next) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "lax", // Set this according to your needs, 'lax' is a good default
+    sameSite: "none", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: "localhost",
+    domain: process.env.DOMAIN,
   });
 
   res.status(200).json({
@@ -210,6 +210,12 @@ export const login = asyncHandler(async (req, res, next) => {
 
 //! controller to logout user!
 export const logout = asyncHandler(async (req, res) => {
-  await res.clearCookie("token", { path: "/" });
+  res.clearCookie("token", {
+    path: "/",
+    httpOnly: true,
+    sameSite: "none", // keep same as login for consistency
+    secure: process.env.NODE_ENV === "production", // secure in production
+    domain: process.env.DOMAIN, // must match cookie domain set during login
+  });
   res.status(200).json({ msg: "succesfully loggedOut" });
 });
