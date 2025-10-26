@@ -51,7 +51,7 @@ jobs:
         run: npm run lint
 
       - name: Trivy Filesystem Scan (Backend)
-        uses: aquasecurity/trivy-action@v2
+        uses: aquasecurity/setup-trivy@v0.2.0
         with:
           scan-type: fs
           path: Backend
@@ -70,22 +70,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
-          cache: "yarn"
-          cache-dependency-path: frontend/yarn.lock
 
       - name: Install dependencies
-        working-directory: frontend
-        run: yarn install --frozen-lockfile
+        working-directory: Frontend
+        run: npm install
 
-      - name: Lint frontend
-        working-directory: frontend
-        run: yarn lint
+      - name: Lint Frontend
+        working-directory: Frontend
+        run: npm run lint
 
       - name: Trivy Filesystem Scan (Frontend)
-        uses: aquasecurity/trivy-action@v2
+        uses: aquasecurity/setup-trivy@v0.2.0
         with:
           scan-type: fs
-          path: frontend
+          path: Frontend
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
