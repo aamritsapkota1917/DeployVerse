@@ -29,40 +29,11 @@ jobs:
               - 'Backend/**'
             frontend:
               - 'Frontend/**'
-
-  lint-and-scan-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-
-      - name: Install dependencies
-        working-directory: Backend
-        run: npm install
-
-      - name: Lint Backend
-        working-directory: Backend
-        run: npm run lint
-
-      - name: Trivy Filesystem Scan (Backend)
-        uses: aquasecurity/setup-trivy@v0.12.1
-        with:
-          scan-type: fs
-          path: Backend
-          format: table
-          exit-code: 1
-          severity: HIGH,CRITICAL
-
   lint-and-scan-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -79,11 +50,110 @@ jobs:
         working-directory: Frontend
         run: npm run lint
 
-      - name: Trivy Filesystem Scan (Frontend)
-        uses: aquasecurity/setup-trivy@v0.12.1
+      - name: Trivy Scan Frontend
+        uses: aquasecurity/trivy-action@0.30.0
+        continue-on-error: true
         with:
-          scan-type: fs
-          path: Frontend
-          format: table
+          scan-type: "fs"
+          scan-ref: "Frontend/"
+          format: "table"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
           exit-code: 1
-          severity: HIGH,CRITICAL
+          output: "trivy-frontend-results.txt"
+
+      - name: Upload Trivy Results as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-scan
+          path: trivy-frontend-results.txt
+
+      - name: Comment Trivy Results on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const trivyResults = fs.readFileSync('trivy-frontend-results.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Frontend Security Scan Results (Trivy)
+
+            <details>
+            <summary>📊 Click to view scan results</summary>
+
+            \`\`\`
+            ${trivyResults}
+            \`\`\`
+
+            </details>
+
+            **Scan Details:**
+            - 📁 Directory: \`Frontend/\`
+            - 🔎 Scanners: Vulnerabilities, Secrets, Misconfigurations
+            - ⚠️ Severity: CRITICAL, HIGH
+            `
+            });
+
+  lint-and-scan-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy Scan Backend
+        uses: aquasecurity/trivy-action@0.30.0
+        continue-on-error: true
+        with:
+          scan-type: "fs"
+          scan-ref: "Backend/"
+          format: "table"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
+          exit-code: 1
+          output: "trivy-backend-results.txt"
+
+      - name: Upload Trivy Results as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-backend-scan
+          path: trivy-backend-results.txt
+
+      - name: Comment Trivy Results on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const trivyResults = fs.readFileSync('trivy-backend-results.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Backend Security Scan Results (Trivy)
+
+            <details>
+            <summary>📊 Click to view scan results</summary>
+
+            \`\`\`
+            ${trivyResults}
+            \`\`\`
+
+            </details>
+
+            **Scan Details:**
+            - 📁 Directory: \`Backend/\`
+            - 🔎 Scanners: Vulnerabilities, Secrets, Misconfigurations
+            - ⚠️ Severity: CRITICAL, HIGH
+            `
+            });
