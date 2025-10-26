@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch all history
 
       - name: Get Latest Tag
         id: get-latest-tag
@@ -57,11 +57,11 @@ jobs:
           FIX=false
 
           while IFS= read -r commit; do
-            if echo "$commit" | grep -qiE "^feat!:|^fix!:|BREAKING CHANGE:"; then
+            if echo "$commit" | grep -qiE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|BREAKING CHANGE:"; then
               BREAKING=true
-            elif echo "$commit" | grep -qiE "^feat:"; then
+            elif echo "$commit" | grep -qiE "^feat(\(.+\))?:"; then
               FEATURE=true
-            elif echo "$commit" | grep -qiE "^fix:"; then
+            elif echo "$commit" | grep -qiE "^fix(\(.+\))?:"; then
               FIX=true
             fi
           done <<< "$COMMITS"
@@ -97,7 +97,7 @@ jobs:
           CHANGELOG="## What's Changed\n\n"
 
           # Breaking changes
-          BREAKING_COMMITS=$(echo "$COMMITS" | grep -iE "^feat!:|^fix!:|BREAKING CHANGE:" || true)
+          BREAKING_COMMITS=$(echo "$COMMITS" | grep -iE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|BREAKING CHANGE:" || true)
           if [ -n "$BREAKING_COMMITS" ]; then
             CHANGELOG="${CHANGELOG}### BREAKING CHANGES\n"
             while IFS= read -r commit; do
@@ -109,7 +109,7 @@ jobs:
           fi
 
           # Features
-          FEATURE_COMMITS=$(echo "$COMMITS" | grep -iE "^feat:" | grep -viE "^feat!:" || true)
+          FEATURE_COMMITS=$(echo "$COMMITS" | grep -iE "^feat(\(.+\))?:" | grep -viE "^feat(\(.+\))?!:" || true)
           if [ -n "$FEATURE_COMMITS" ]; then
             CHANGELOG="${CHANGELOG}### Features\n"
             while IFS= read -r commit; do
@@ -121,7 +121,7 @@ jobs:
           fi
 
           # Bug fixes
-          FIX_COMMITS=$(echo "$COMMITS" | grep -iE "^fix:" | grep -viE "^fix!:" || true)
+          FIX_COMMITS=$(echo "$COMMITS" | grep -iE "^fix(\(.+\))?:" | grep -viE "^fix(\(.+\))?!:" || true)
           if [ -n "$FIX_COMMITS" ]; then
             CHANGELOG="${CHANGELOG}### Bug Fixes\n"
             while IFS= read -r commit; do
@@ -133,7 +133,7 @@ jobs:
           fi
 
           # Other changes
-          OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "^feat:|^fix:" || true)
+          OTHER_COMMITS=$(echo "$COMMITS" | grep -viE "^feat(\(.+\))?:|^fix(\(.+\))?:" || true)
           if [ -n "$OTHER_COMMITS" ]; then
             CHANGELOG="${CHANGELOG}### 🔧 Other Changes\n"
             while IFS= read -r commit; do
