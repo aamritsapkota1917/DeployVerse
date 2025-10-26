@@ -63,9 +63,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "lax", // Set this according to your needs, 'lax' is a good default
+    sameSite: "none", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: "localhost",
+    domain: process.env.DOMAIN,
   });
   res.status(200).json({ msg: "Password reset completed", user });
 });
