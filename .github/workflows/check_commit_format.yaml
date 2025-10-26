@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/**
+    paths:
+      - "Frontend/**"
+      - "Backend/**"
 
 jobs:
   commitlint:

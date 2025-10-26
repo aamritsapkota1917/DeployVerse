@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - Dev
+    paths:
+      - "Frontend/**"
+      - "Backend/**"
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
