@@ -1,4 +1,4 @@
-name: Lint and Sonar Report
+name: Lint and Trivy Report
 
 permissions:
   contents: write
@@ -29,10 +29,14 @@ jobs:
               - 'Backend/**'
             frontend:
               - 'Frontend/**'
+
   lint-and-scan-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +55,7 @@ jobs:
         run: npm run lint
 
       - name: Trivy Scan Frontend
+        id: trivy-frontend
         uses: aquasecurity/trivy-action@0.30.0
         continue-on-error: true
         with:
@@ -100,15 +105,23 @@ jobs:
             `
             });
 
+      - name: Fail job if vulnerabilities found
+        if: steps.trivy-frontend.outcome == 'failure'
+        run: exit 1
+
   lint-and-scan-backend:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Trivy Scan Backend
+        id: trivy-backend
         uses: aquasecurity/trivy-action@0.30.0
         continue-on-error: true
         with:
@@ -157,3 +170,7 @@ jobs:
             - ⚠️ Severity: CRITICAL, HIGH
             `
             });
+
+      - name: Fail job if vulnerabilities found
+        if: steps.trivy-backend.outcome == 'failure'
+        run: exit 1
