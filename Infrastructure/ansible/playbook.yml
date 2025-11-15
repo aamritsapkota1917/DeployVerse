@@ -1,0 +1,8 @@
+- hosts: deployment_VM
+  become: true
+  vars:
+    backend_domain_name: backend.example.com
+    domain_mail: admin@example.com
+  roles:
+    - docker
+    - nginx
