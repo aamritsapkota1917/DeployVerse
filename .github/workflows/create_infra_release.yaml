@@ -189,6 +189,7 @@ jobs:
                   VERSION=${{ steps.semver.outputs.new_version }}
                   S3_BUCKET="${{ secrets.TERRAFORM_BUCKET_NAME }}"
                   RELEASE_PATH="releases/$VERSION"
+                  ls -al
 
                   aws s3 cp "$ZIP_NAME" "s3://$S3_BUCKET/$RELEASE_PATH/$ZIP_NAME"
 
