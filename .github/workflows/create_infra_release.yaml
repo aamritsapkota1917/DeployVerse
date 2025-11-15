@@ -173,13 +173,13 @@ jobs:
               if: steps.semver.outputs.version_bumped == 'true'
               run: |
                   VERSION=${{ steps.semver.outputs.new_version }}
-                  ZIP_NAME="infra-${VERSION}.zip"
+                  ZIP_NAME="${VERSION}.zip"
 
                   cd Infrastructure/terraform
                   zip -r "../${ZIP_NAME}" . \
                     -x ".terraform/*" \
                     -x ".git/*"
-                  cd ..
+                  cd ../..
 
                   echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
