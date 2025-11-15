@@ -1,0 +1,66 @@
+name: CONFIGURE EC2-SERVER VIA ANSIBLE
+
+on:
+    workflow_dispatch:
+
+jobs:
+    ansible_deploy:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: Infrastructure/ansible
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v4
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: us-east-1
+
+            - name: Get EC2 Public IP
+              id: get-ec2-ip
+              run: |
+                  EC2_IP=$(aws ec2 describe-instances \
+                    --filters "Name=tag:project,Values=deployverse" "Name=instance-state-name,Values=running" \
+                    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                    --output text)
+
+                  if [ "$EC2_IP" == "None" ] || [ -z "$EC2_IP" ]; then
+                    echo "No running EC2 instance found!"
+                    exit 1
+                  fi
+
+                  echo "ec2_ip=$EC2_IP" >> $GITHUB_OUTPUT
+
+            - name: Setup SSH Key
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+                  chmod 600 ~/.ssh/deploy_key
+                  ssh-keyscan -H ${{ steps.get-ec2-ip.outputs.ec2_ip }} >> ~/.ssh/known_hosts
+
+            - name: remove existing inventory
+              run: |
+                  rm -f inventory.ini
+
+            - name: Create Dynamic Ansible Inventory
+              run: |
+                  echo "[ec2-server]" > inventory.ini
+                  echo "${{ steps.get-ec2-ip.outputs.ec2_ip }} ansible_user=${{ secrets.EC2_USER_NAME }} ansible_ssh_private_key_file=~/.ssh/deploy_key" >> inventory.ini
+                  echo "Dynamic inventory created:"
+
+            - name: Install Ansible
+              run: |
+                  sudo apt update
+                  sudo apt install -y ansible
+
+            - name: Run Ansible Playbook
+              run: |
+                  ansible-playbook -i inventory.ini playbook.yml \
+                    -e backend_domain_name="${{ secrets.BACKEND_DOMAIN_NAME }}" \
+                    -e domain_mail="${{ secrets.DOMAIN_MAIL }}" \
+                    -e ansible_user="${{ secrets.EC2_USER_NAME }}"

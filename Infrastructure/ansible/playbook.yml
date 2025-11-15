@@ -1,8 +1,7 @@
-- hosts: deployment_VM
+- hosts: ec2-server
   become: true
-  vars:
-    backend_domain_name: backend.example.com
-    domain_mail: admin@example.com
+  remote_user: "{{ ansible_user }}"
+
   roles:
     - docker
     - nginx
