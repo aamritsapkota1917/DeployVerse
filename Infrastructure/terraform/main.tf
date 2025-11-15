@@ -26,8 +26,6 @@ module "ec2" {
   subnet_id     = module.vpc.subnet_id
   vpc_id        = module.vpc.vpc_id
   key_name      = var.key_name
-domain_mail         = var.domain_mail
-  backend_domain_name = var.backend_domain_name
 }
 
 
