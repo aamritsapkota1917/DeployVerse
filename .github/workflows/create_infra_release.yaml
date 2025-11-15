@@ -8,11 +8,11 @@ on:
         branches:
             - main
         paths:
-            - "Infrastructure/**"
+            - "Infrastructure/terraform/**"
 
 env:
     TF_VERSION: "1.12.2"
-    WORKING_DIR: "Infrastructure"
+    WORKING_DIR: "Infrastructure/terraform"
 
 jobs:
     create-release:
@@ -47,11 +47,11 @@ jobs:
                   # Split version into major.minor.patch
                   IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 
-                  # Get commits since last tag for Infrastructure directory only
+                  # Get commits since last tag for Infrastructure/terraform directory only
                   if [ "$LATEST_TAG" == "infra-v0.0.0" ]; then
-                    COMMITS=$(git log --pretty=format:"%s" HEAD -- Infrastructure/)
+                    COMMITS=$(git log --pretty=format:"%s" HEAD -- Infrastructure/terraform/)
                   else
-                    COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD -- Infrastructure/)
+                    COMMITS=$(git log --pretty=format:"%s" ${LATEST_TAG}..HEAD -- Infrastructure/terraform/)
                   fi
 
                   echo "Infrastructure commits since last release:"
@@ -175,7 +175,7 @@ jobs:
                   VERSION=${{ steps.semver.outputs.new_version }}
                   ZIP_NAME="infra-${VERSION}.zip"
 
-                  cd Infrastructure
+                  cd Infrastructure/terraform
                   zip -r "../${ZIP_NAME}" . \
                     -x ".terraform/*" \
                     -x ".git/*"
