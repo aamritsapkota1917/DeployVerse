@@ -1,0 +1,36 @@
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Enable and start Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Configure Nginx reverse proxy
+  template:
+    src: deployverse.conf.j2
+    dest: /etc/nginx/conf.d/deployverse.conf
+
+- name: Test Nginx configuration
+  command: nginx -t
+  notify:
+    - Reload Nginx
+
+- name: Install Certbot
+  yum:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Wait for DNS propagation
+  pause:
+    seconds: 20
+
+- name: Obtain SSL certificate with redirect
+  command: >
+    certbot --nginx -d {{ backend_domain_name }}
+    --non-interactive --agree-tos -m {{ domain_mail }} --redirect
