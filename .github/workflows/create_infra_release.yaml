@@ -179,7 +179,7 @@ jobs:
                   zip -r "../${ZIP_NAME}" . \
                     -x ".terraform/*" \
                     -x ".git/*"
-                  cd ../..
+                  cd ..
 
                   echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
