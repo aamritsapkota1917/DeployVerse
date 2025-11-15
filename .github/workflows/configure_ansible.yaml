@@ -50,8 +50,7 @@ jobs:
             - name: Create Dynamic Ansible Inventory
               run: |
                   echo "[ec2-server]" > inventory.ini
-                  echo "${{ steps.get-ec2-ip.outputs.ec2_ip }} ansible_user=${{ secrets.EC2_USER_NAME }} ansible_ssh_private_key_file=~/.ssh/deploy_key" >> inventory.ini
-                  echo "Dynamic inventory created:"
+                  echo "backend ansible_host=${{ steps.get-ec2-ip.outputs.ec2_ip }} ansible_user=${{ secrets.EC2_USER_NAME }} ansible_ssh_private_key_file=~/.ssh/deploy_key" >> inventory.ini
 
             - name: Install Ansible
               run: |
