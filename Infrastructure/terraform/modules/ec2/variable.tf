@@ -32,9 +32,4 @@ variable "key_name" {
   type = string
 }
 
-variable "domain_mail" {
-  type = string
-}
-variable "backend_domain_name" {
-  type = string
-}
+
