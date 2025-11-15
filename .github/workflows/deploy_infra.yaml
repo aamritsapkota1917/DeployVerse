@@ -82,7 +82,7 @@ jobs:
                   DEPLOY_TAG="${{ steps.get-tag.outputs.deploy_tag }}"
                   S3_BUCKET="${{ secrets.TERRAFORM_BUCKET_NAME }}"
                   RELEASE_PATH="releases/$DEPLOY_TAG"
-                  ZIP_NAME="infra-${DEPLOY_TAG}.zip"
+                  ZIP_NAME="${DEPLOY_TAG}.zip"
 
                   echo "Downloading from: s3://$S3_BUCKET/$RELEASE_PATH/$ZIP_NAME"
 
