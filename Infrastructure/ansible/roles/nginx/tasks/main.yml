@@ -9,10 +9,23 @@
     state: started
     enabled: true
 
-- name: Configure Nginx reverse proxy
+- name: Configure Backemd API
   template:
     src: deployverse.conf.j2
     dest: /etc/nginx/conf.d/deployverse.conf
+
+
+- name: Configure Grafana
+  template:
+    src: grafana.conf.j2
+    dest: /etc/nginx/conf.d/grafana.conf 
+   
+
+
+- name: Configure Prometheus
+  template:
+    src: prometheus.conf.j2
+    dest: /etc/nginx/conf.d/prometheus.conf
 
 - name: Test Nginx configuration
   command: nginx -t
