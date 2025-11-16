@@ -104,7 +104,7 @@ module "route53_grafana" {
   depends_on = [module.ec2]
 }
 
-module "route53_grafana" {
+module "route53_prometheus" {
   source         = "./modules/route53"
   hosted_zone_id = data.aws_route53_zone.hosted_zone.zone_id
   domain_name    = var.prometheus_domain_name
