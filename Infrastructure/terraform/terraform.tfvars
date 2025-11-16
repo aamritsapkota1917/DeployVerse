@@ -10,3 +10,6 @@ frontend_domain_name = "blog.deployverse.dev"
 price_class          = "PriceClass_All"
 hosted_zone_name     = "blog.deployverse.dev"
 backend_domain_name  = "api.blog.deployverse.dev"
+grafana_domain_name  = "grafana.blog.deployverse.dev"
+prometheus_domain_name = "prometheus.blog.deployverse.dev"
+
