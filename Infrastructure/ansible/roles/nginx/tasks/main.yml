@@ -34,3 +34,13 @@
   command: >
     certbot --nginx -d {{ backend_domain_name }}
     --non-interactive --agree-tos -m {{ domain_mail }} --redirect
+
+- name: Obtain SSL for Prometheus
+  command: >
+    certbot --nginx -d {{ prometheus_domain_name }}
+    --non-interactive --agree-tos -m {{ domain_mail }} --redirect
+
+- name: Obtain SSL for Grafana
+  command: >
+    certbot --nginx -d {{ grafana_domain_name }}
+    --non-interactive --agree-tos -m {{ domain_mail }} --redirect
