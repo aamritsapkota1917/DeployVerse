@@ -62,3 +62,11 @@ variable "hosted_zone_name" {
 variable "backend_domain_name" {
   type = string
 }
+
+variable "grafana_domain_name" {
+  type = string
+}
+
+variable "prometheus_domain_name" {
+  type = string
+}
