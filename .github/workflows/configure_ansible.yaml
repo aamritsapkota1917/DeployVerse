@@ -59,7 +59,10 @@ jobs:
 
             - name: Run Ansible Playbook
               run: |
-                  ansible-playbook -i inventory.ini playbook.yml \
-                    -e backend_domain_name="${{ secrets.BACKEND_DOMAIN_NAME }}" \
-                    -e domain_mail="${{ secrets.DOMAIN_MAIL }}" \
-                    -e ansible_user="${{ secrets.EC2_USER_NAME }}"
+                ansible-playbook -i inventory.ini playbook.yml \
+                  -e backend_domain_name="${{ secrets.BACKEND_DOMAIN_NAME }}" \
+                  -e prometheus_domain_name="${{ secrets.PROMETHEUS_DOMAIN_NAME }}" \
+                  -e grafana_domain_name="${{ secrets.GRAFANA_DOMAIN_NAME }}" \
+                  -e domain_mail="${{ secrets.DOMAIN_MAIL }}" \
+                  -e ansible_user="${{ secrets.EC2_USER_NAME }}"
+                  -e grafana_admin_password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}"

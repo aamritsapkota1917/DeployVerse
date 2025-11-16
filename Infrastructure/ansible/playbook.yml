@@ -2,6 +2,13 @@
   become: true
   remote_user: "{{ ansible_user }}"
 
+  vars:
+    backend_domain_name: "{{ backend_domain_name }}"
+    prometheus_domain_name: "{{ prometheus_domain_name }}"
+    grafana_domain_name: "{{ grafana_domain_name }}"
+    domain_mail: "{{ domain_mail }}"
+
   roles:
     - docker
+    - monitoring
     - nginx
