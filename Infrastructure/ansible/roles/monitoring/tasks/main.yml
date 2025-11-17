@@ -8,11 +8,17 @@
     src: prometheus.yml.j2
     dest: /opt/prometheus/prometheus.yml
 
+- name: Create monitoring docker network
+  docker_network:
+    name: monitoring
+
 - name: Start Prometheus container
   docker_container:
     name: prometheus
     image: prom/prometheus
     restart_policy: always
+    networks:
+      - name: monitoring
     ports:
       - "9090:9090"
     volumes:
@@ -23,6 +29,8 @@
     name: node-exporter
     image: prom/node-exporter
     restart_policy: always
+    networks:
+      - name: monitoring
     ports:
       - "9100:9100"
 
@@ -31,6 +39,8 @@
     name: grafana
     image: grafana/grafana
     restart_policy: always
+    networks:
+      - name: monitoring
     ports:
       - "3000:3000"
     env:
