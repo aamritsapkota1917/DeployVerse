@@ -19,8 +19,8 @@
     restart_policy: always
     networks:
       - name: monitoring
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    etc_hosts:
+      host.docker.internal: "host-gateway"
     ports:
       - "9090:9090"
     volumes:
