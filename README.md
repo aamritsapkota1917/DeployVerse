@@ -61,15 +61,14 @@ Full-stack observability provisionally deployed:
 - Alerting: Rule-based notifications for resource exhaustion and service health  
 
 Access  
-Grafana: https://grafana.deployverse.dev  
-Prometheus: https://prometheus.deployverse.dev  
+Grafana: https://grafana.blog.deployverse.dev  
+Prometheus: https://prometheus.blog.deployverse.dev  
 
 ## Live Deployment
 
 The platform is fully deployed and publicly accessible:
 
-Application: https://blog.deployverse.dev  
-API Endpoint: https://api.deployverse.dev  
+Application: https://blog.deployverse.dev    
 
 ## Built With
 
