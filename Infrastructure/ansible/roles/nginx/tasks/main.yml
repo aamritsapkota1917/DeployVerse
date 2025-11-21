@@ -14,18 +14,20 @@
     src: deployverse.conf.j2
     dest: /etc/nginx/conf.d/deployverse.conf
 
-
 - name: Configure Grafana
   template:
     src: grafana.conf.j2
-    dest: /etc/nginx/conf.d/grafana.conf 
-   
-
+    dest: /etc/nginx/conf.d/grafana.conf
 
 - name: Configure Prometheus
   template:
     src: prometheus.conf.j2
     dest: /etc/nginx/conf.d/prometheus.conf
+
+- name: Configure Alertmanager
+  template:
+    src: alertmanager.conf.j2
+    dest: /etc/nginx/conf.d/alertmanager.conf
 
 - name: Test Nginx configuration
   command: nginx -t
@@ -56,4 +58,9 @@
 - name: Obtain SSL for Grafana
   command: >
     certbot --nginx -d {{ grafana_domain_name }}
+    --non-interactive --agree-tos -m {{ domain_mail }} --redirect
+
+- name: Obtain SSL for Alertmanager
+  command: >
+    certbot --nginx -d {{ alertmanager_domain_name }}
     --non-interactive --agree-tos -m {{ domain_mail }} --redirect
