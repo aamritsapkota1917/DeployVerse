@@ -3,6 +3,22 @@
     path: /opt/prometheus
     state: directory
 
+- name: Create rules directory
+  file:
+    path: /opt/prometheus/rules
+    state: directory
+
+- name: Copy container alert rules
+  copy:
+    src: container_rules.yml
+    dest: /opt/prometheus/rules/container_rules.yml
+
+- name: Copy Alertmanager config
+  template:
+    src: alertmanager.yml.j2
+    dest: /opt/prometheus/alertmanager.yml
+  no_log: true
+
 - name: Copy Prometheus config
   template:
     src: prometheus.yml.j2
@@ -25,6 +41,19 @@
       - "9090:9090"
     volumes:
       - /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /opt/prometheus/rules:/etc/prometheus/rules
+
+- name: Start Alertmanager
+  docker_container:
+    name: alertmanager
+    image: prom/alertmanager
+    restart_policy: always
+    networks:
+      - name: monitoring
+    ports:
+      - "9093:9093"
+    volumes:
+      - /opt/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
 
 - name: Start Node Exporter
   docker_container:
