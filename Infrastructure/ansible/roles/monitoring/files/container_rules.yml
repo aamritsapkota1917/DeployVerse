@@ -1,0 +1,11 @@
+groups:
+  - name: container.rules
+    rules:
+      - alert: ContainerStopped
+        expr: engine_daemon_container_states_running == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "A container has stopped"
+          description: "Container '{{ $labels.name }}' on '{{ $labels.instance }}' has stopped!"

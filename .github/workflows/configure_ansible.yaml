@@ -65,4 +65,5 @@ jobs:
                   -e grafana_domain_name="${{ secrets.GRAFANA_DOMAIN_NAME }}" \
                   -e domain_mail="${{ secrets.DOMAIN_MAIL }}" \
                   -e ansible_user="${{ secrets.EC2_USER_NAME }}" \
-                  -e grafana_admin_password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+                  -e grafana_admin_password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+                  -e discord_webhook_url="${{ secrets.DISCORD_WEBHOOK_URL }}"
