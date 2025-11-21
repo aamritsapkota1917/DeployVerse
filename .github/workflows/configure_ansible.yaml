@@ -67,3 +67,4 @@ jobs:
                   -e ansible_user="${{ secrets.EC2_USER_NAME }}" \
                   -e grafana_admin_password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
                   -e discord_webhook_url="${{ secrets.DISCORD_WEBHOOK_URL }}"
+
