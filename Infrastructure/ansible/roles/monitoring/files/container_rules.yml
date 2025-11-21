@@ -7,5 +7,5 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "A container has stopped"
-          description: "Container '{{ $labels.name }}' on '{{ $labels.instance }}' has stopped!"
+          summary: "A container has stopped on '{{ $labels.instance }}'"
+         
