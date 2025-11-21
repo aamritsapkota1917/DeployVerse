@@ -2,7 +2,7 @@ groups:
   - name: container.rules
     rules:
       - alert: ContainerStopped
-        expr: engine_daemon_container_states_running == 0
+        expr: engine_daemon_container_states_containers{state="stopped"} > 0
         for: 1m
         labels:
           severity: warning
