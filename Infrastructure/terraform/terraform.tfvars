@@ -12,4 +12,5 @@ hosted_zone_name     = "blog.deployverse.dev"
 backend_domain_name  = "api.blog.deployverse.dev"
 grafana_domain_name  = "grafana.blog.deployverse.dev"
 prometheus_domain_name = "prometheus.blog.deployverse.dev"
+alertmanager_domain_name = "alert.blog.deployverse.dev"
 

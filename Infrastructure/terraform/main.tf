@@ -120,5 +120,21 @@ module "route53_prometheus" {
   depends_on = [module.ec2]
 }
 
+module "route53_alertmanager" {
+  source         = "./modules/route53"
+  hosted_zone_id = data.aws_route53_zone.hosted_zone.zone_id
+  domain_name    = var.alertmanager_domain_name
+
+  use_alias = false
+
+  evaluate_target_health = false
+
+  record_type = "A"
+  records     = [module.ec2.public_ip]
+  ttl         = 300
+
+  depends_on = [module.ec2]
+}
+
 
 

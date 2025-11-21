@@ -70,3 +70,8 @@ variable "grafana_domain_name" {
 variable "prometheus_domain_name" {
   type = string
 }
+
+variable "alertmanager_domain_name"{
+  type = string
+
+}

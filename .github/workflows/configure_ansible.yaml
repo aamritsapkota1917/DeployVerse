@@ -66,4 +66,5 @@ jobs:
                   -e domain_mail="${{ secrets.DOMAIN_MAIL }}" \
                   -e ansible_user="${{ secrets.EC2_USER_NAME }}" \
                   -e grafana_admin_password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
-                  -e discord_webhook_url="${{ secrets.DISCORD_WEBHOOK_URL }}"
+                  -e discord_webhook_url="${{ secrets.DISCORD_WEBHOOK_URL }}" \
+                  -e alertmanager_domain_name="${{ secrets.ALERTMANAGER_DOMAIN_NAME }}"
