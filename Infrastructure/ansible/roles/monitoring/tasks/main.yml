@@ -1,3 +1,6 @@
+# -----------------------------
+# Prometheus directories & configs
+# -----------------------------
 - name: Create Prometheus directory
   file:
     path: /opt/prometheus
@@ -24,10 +27,16 @@
     src: prometheus.yml.j2
     dest: /opt/prometheus/prometheus.yml
 
+# -----------------------------
+# Docker network
+# -----------------------------
 - name: Create monitoring docker network
   docker_network:
     name: monitoring
 
+# -----------------------------
+# Prometheus container
+# -----------------------------
 - name: Start Prometheus container
   docker_container:
     name: prometheus
@@ -43,6 +52,9 @@
       - /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - /opt/prometheus/rules:/etc/prometheus/rules
 
+# -----------------------------
+# Alertmanager container
+# -----------------------------
 - name: Start Alertmanager
   docker_container:
     name: alertmanager
@@ -55,6 +67,9 @@
     volumes:
       - /opt/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
 
+# -----------------------------
+# Node Exporter container
+# -----------------------------
 - name: Start Node Exporter
   docker_container:
     name: node-exporter
@@ -65,6 +80,26 @@
     ports:
       - "9100:9100"
 
+# -----------------------------
+# Grafana directories for provisioning
+# -----------------------------
+- name: Create Grafana provisioning directories
+  file:
+    path: /opt/grafana/provisioning/datasources
+    state: directory
+    recurse: true
+
+# -----------------------------
+# Grafana datasource config
+# -----------------------------
+- name: Copy Prometheus datasource config
+  copy:
+    src: prometheus-datasource.yml
+    dest: /opt/grafana/provisioning/datasources/prometheus-datasource.yml
+
+# -----------------------------
+# Grafana container
+# -----------------------------
 - name: Start Grafana
   docker_container:
     name: grafana
@@ -76,3 +111,5 @@
       - "3000:3000"
     env:
       GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+    volumes:
+      - /opt/grafana/provisioning:/etc/grafana/provisioning
