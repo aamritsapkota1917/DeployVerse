@@ -1,4 +1,4 @@
-import { info_logger } from "../Utils/logger";
+import { info_logger } from "../Utils/logger.js";
 
 export const info_logger_middleware = (req, res, next) => {
   const start = Date.now();
