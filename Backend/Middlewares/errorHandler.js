@@ -1,4 +1,4 @@
-import { error_logger } from "../Utils/logger";
+import { error_logger } from "../Utils/logger.js";
 
 const errorHandler = (err, req, res, next) => {
   res.status(500);
