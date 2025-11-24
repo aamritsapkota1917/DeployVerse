@@ -79,7 +79,7 @@ jobs:
               docker rm -f deployverse-backend || true
             fi
 
-            sleep 5
+            sleep 30
 
             echo "---- AFTER STOP ----"
             docker ps -a || true
