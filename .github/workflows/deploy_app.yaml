@@ -76,6 +76,7 @@ jobs:
               docker stop deployverse-backend || true
               docker rm deployverse-backend || true
             fi
+            sleep 10
 
             docker run -d \
               --name deployverse-backend \
