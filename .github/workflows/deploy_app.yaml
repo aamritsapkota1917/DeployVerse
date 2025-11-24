@@ -51,32 +51,43 @@ jobs:
 
       - name: Deploy Backend to EC2
         uses: appleboy/ssh-action@master
-        env:
-          USER_NAME: ${{ secrets.EC2_USER_NAME }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          TAG: ${{ inputs.tag }}
-          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
         with:
           host: ${{ steps.get-ec2-ip.outputs.ec2_ip }}
           username: ${{ secrets.EC2_USER_NAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOCKER_USERNAME,TAG,BACKEND_ENV
           script: |
             set -e
-            mkdir -p /home/${USER_NAME}/deployverse-backend
-            echo "${BACKEND_ENV}" > /home/${USER_NAME}/deployverse-backend/.env
 
+            # Create directory with proper permissions
+            mkdir -p ~/deployverse-backend
+
+            # Write environment file
+            echo "${BACKEND_ENV}" > ~/deployverse-backend/.env
+
+            # Pull latest Docker image
             docker pull ${DOCKER_USERNAME}/deployverse-backend:${TAG}
-            docker rm -f deployverse-backend || true
+
+            # Stop and remove existing container if it exists
+            if [ "$(docker ps -aq -f name=deployverse-backend)" ]; then
+                docker rm -f deployverse-backend
+            fi
             sleep 5
 
+            # Run new container
             docker run -d \
               --name deployverse-backend \
               --restart unless-stopped \
               -p 5000:5000 \
-              --env-file /home/${USER_NAME}/deployverse-backend/.env \
+              --env-file ~/deployverse-backend/.env \
               ${DOCKER_USERNAME}/deployverse-backend:${TAG}
 
+            # Cleanup old images
             docker image prune -af --filter "until=72h" || true
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          TAG: ${{ inputs.tag }}
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
 
   deploy-frontend:
     if: ${{ inputs.deploy_frontend == true }}
