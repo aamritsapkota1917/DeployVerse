@@ -72,10 +72,12 @@ jobs:
 
             docker pull ${DOCKER_USERNAME}/deployverse-backend:${TAG}
 
-            if [ "$(docker ps -aq -f name=deployverse-backend)" ]; then
-              docker stop deployverse-backend || true
-              docker rm deployverse-backend || true
-            fi
+            old_id=$(docker ps -aq --filter "name=^deployverse-backend$")
+            if [ -n "$old_id" ]; then
+              docker stop "$old_id" || true
+              docker rm -f "$old_id" || true
+            fi 
+            
             sleep 10
 
             docker run -d \
