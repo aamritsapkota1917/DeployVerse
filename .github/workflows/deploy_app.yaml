@@ -75,7 +75,7 @@ jobs:
             docker ps -a
             if [ "$(docker ps -aq -f name=deployverse-backend)" ]; then
               docker stop deployverse-backend || true
-              docker rm deployverse-backend || true
+              docker rm -f deployverse-backend || true
             fi
             sleep 10
             docker ps -a
