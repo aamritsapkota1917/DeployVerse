@@ -9,6 +9,12 @@
     state: started
     enabled: true
 
+- name: Add promtail user to nginx group
+  user:
+    name: promtail
+    groups: nginx
+    append: yes
+
 - name: Configure Backemd API
   template:
     src: deployverse.conf.j2

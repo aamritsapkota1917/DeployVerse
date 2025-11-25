@@ -81,6 +81,68 @@
       - "9100:9100"
 
 # -----------------------------
+# Loki directories
+# -----------------------------
+- name: Create Loki directory
+  file:
+    path: /opt/loki
+    state: directory
+    recurse: true
+
+# -----------------------------
+# Promtail directories
+# -----------------------------
+- name: Create Promtail directory
+  file:
+    path: /opt/promtail
+    state: directory
+    recurse: true
+
+# Copy Loki config
+- name: Copy Loki config
+  copy:
+    src: loki-config.yml
+    dest: /opt/loki/loki-config.yml
+
+# Copy Promtail config
+- name: Copy Promtail config
+  copy:
+    src: promtail-config.yml
+    dest: /opt/promtail/promtail-config.yml
+
+# -----------------------------
+# Loki container
+# -----------------------------
+- name: Start Loki
+  docker_container:
+    name: loki
+    image: grafana/loki:2.9.0
+    restart_policy: always
+    networks:
+      - name: monitoring
+    ports:
+      - "3100:3100"
+    volumes:
+      - /opt/loki/loki-config.yml:/etc/loki/config.yml
+
+# -----------------------------
+# Promtail container
+# -----------------------------
+- name: Start Promtail
+  docker_container:
+    name: promtail
+    image: grafana/promtail:2.9.0
+    restart_policy: always
+    networks:
+      - name: monitoring
+    ports:
+      - "9080:9080"
+    volumes:
+      - /opt/promtail/promtail-config.yml:/etc/promtail/promtail.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+# -----------------------------
 # Grafana directories for provisioning
 # -----------------------------
 - name: Create Grafana provisioning directories
@@ -90,12 +152,21 @@
     recurse: true
 
 # -----------------------------
-# Grafana datasource config
+# Grafana prometheus datasource config
 # -----------------------------
 - name: Copy Prometheus datasource config
   copy:
     src: prometheus-datasource.yml
     dest: /opt/grafana/provisioning/datasources/prometheus-datasource.yml
+
+# -----------------------------
+# Grafana Loki datasource config
+# -----------------------------
+
+- name: Copy Loki datasource config
+  copy:
+    src: loki-datasource.yml
+    dest: /opt/grafana/provisioning/datasources/loki-datasource.yml
 
 # -----------------------------
 # Grafana container
