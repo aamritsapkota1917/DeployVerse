@@ -138,9 +138,11 @@
     ports:
       - "9080:9080"
     volumes:
-      - /opt/promtail/promtail-config.yml:/etc/promtail/promtail.yml
+      - /opt/promtail/promtail-config.yml:/etc/promtail/config.yml
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log:/var/log:ro
+    command: -config.file=/etc/promtail/config.yml
 
 # -----------------------------
 # Grafana directories for provisioning

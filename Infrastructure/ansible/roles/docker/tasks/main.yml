@@ -20,12 +20,29 @@
     groups: docker
     append: yes
 
-- name: Configure Docker metrics endpoint
+- name: Install Grafana Loki Docker plugin
+  command: >
+    docker plugin install grafana/loki-docker-driver:3.3.2-amd64
+    --alias loki --grant-all-permissions
+  args:
+    creates: /var/lib/docker/plugins/grafana_loki-docker-driver
+
+- name: Configure Docker daemon with metrics and Loki logging
   copy:
     dest: /etc/docker/daemon.json
     content: |
       {
+        "debug": true,
         "metrics-addr": "0.0.0.0:9323",
-        "experimental": true
+        "experimental": true,
+        "log-driver": "loki",
+        "log-opts": {
+          "mode": "non-blocking",
+          "loki-url": "http://127.0.0.1:3100/loki/api/v1/push",
+          "loki-batch-size": "400",
+          "loki-retries": "2",
+          "max-size": "10m",
+          "max-file": "3"
+        }
       }
   notify: Restart Docker

@@ -1,5 +1,6 @@
 server:
   http_listen_port: 9080
+  grpc_listen_port: 0
 
 positions:
   filename: /tmp/positions.yaml
@@ -8,28 +9,58 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  # Docker container logs
-  - job_name: "docker"
+  # Nginx access logs
+  - job_name: nginx_access
     static_configs:
-      - targets: ["localhost"]
-        labels:
-          job: docker
-          __path__: /var/lib/docker/containers/*/*.log
-
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-
-    relabel_configs:
-      - source_labels: ["__meta_docker_container_name"]
-        target_label: container
-      - source_labels: ["__meta_docker_container_id"]
-        target_label: container_id
-
-  # NGINX host logs
-  - job_name: "nginx"
-    static_configs:
-      - targets: ["localhost"]
+      - targets:
+          - localhost
         labels:
           job: nginx
-          __path__: /var/log/nginx/*.log
+          log_type: access
+          environment: production
+          __path__: /var/log/nginx/access.log
+
+    # Parse Nginx access logs
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<remote_addr>[\w\.]+) - (?P<remote_user>[^ ]*) \[(?P<time_local>.*)\] "(?P<method>[^ ]*) (?P<request>[^ ]*) (?P<protocol>[^ ]*)" (?P<status>[\d]+) (?P<body_bytes_sent>[\d]+) "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)".*'
+      - labels:
+          method:
+          status:
+
+  # Nginx error logs
+  - job_name: nginx_error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          log_type: error
+          environment: production
+          __path__: /var/log/nginx/error.log
+
+    #  Parse Nginx error logs
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)$'
+      - labels:
+          level:
+
+  # System logs
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          log_type: syslog
+          environment: production
+          __path__: /var/log/syslog
+
+    # Parse syslog format
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\w+\s+\d+\s+\d{2}:\d{2}:\d{2}) (?P<hostname>\S+) (?P<process>\S+?)(\[(?P<pid>\d+)\])?: (?P<message>.*)$'
+      - labels:
+          hostname:
+          process:
