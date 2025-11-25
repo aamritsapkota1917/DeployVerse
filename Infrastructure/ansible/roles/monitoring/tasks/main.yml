@@ -154,6 +154,25 @@
     recurse: true
 
 # -----------------------------
+# Grafana dashboards provisioning
+# -----------------------------
+
+- name: Create Grafana dashboards provisioning directory
+  file:
+    path: /opt/grafana/provisioning/dashboards
+    state: directory
+    recurse: true
+
+# -----------------------------
+# copy Grafana dashboard JSON
+# -----------------------------
+
+- name: Copy Grafana dashboard JSON
+  copy:
+    src: my_dashboard.json
+    dest: /opt/grafana/provisioning/dashboards/my_dashboard.json
+
+# -----------------------------
 # Grafana prometheus datasource config
 # -----------------------------
 - name: Copy Prometheus datasource config
@@ -169,6 +188,25 @@
   copy:
     src: loki-datasource.yml
     dest: /opt/grafana/provisioning/datasources/loki-datasource.yml
+
+# -----------------------------
+# Grafana dashboard provisioning config
+# -----------------------------
+
+- name: Copy Grafana dashboard provisioning config
+  copy:
+    dest: /opt/grafana/provisioning/dashboards/dashboard.yml
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          updateIntervalSeconds: 10
+          options:
+            path: /etc/grafana/provisioning/dashboards
 
 # -----------------------------
 # Grafana container
