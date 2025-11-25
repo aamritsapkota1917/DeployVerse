@@ -20,12 +20,16 @@
     groups: docker
     append: yes
 
+- name: Check if Loki plugin exists
+  command: docker plugin ls --format '{{ "{{ .Name }}" }}'
+  register: docker_plugins
+  changed_when: false
+
 - name: Install Grafana Loki Docker plugin
   command: >
     docker plugin install grafana/loki-docker-driver:3.3.2-amd64
     --alias loki --grant-all-permissions
-  args:
-    creates: /var/lib/docker/plugins/grafana_loki-docker-driver
+  when: "'loki' not in docker_plugins.stdout"
 
 - name: Configure Docker daemon with metrics and Loki logging
   copy:
