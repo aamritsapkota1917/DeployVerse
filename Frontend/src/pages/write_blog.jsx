@@ -1,9 +1,14 @@
 import Editor from "@/components/blog/Editor";
+import { Button } from "@/components/ui/button";
+import PublishNavbar from "@/components/publish_navbar";
 
 const Write_blog = () => {
   return (
     <>
-      <Editor />
+      <PublishNavbar />
+      <div className="max-w-3xl mx-auto ">
+        <Editor />
+      </div>
     </>
   );
 };

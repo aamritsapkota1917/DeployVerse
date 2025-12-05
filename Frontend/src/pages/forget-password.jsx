@@ -8,7 +8,7 @@ import { Email } from "@/components/form/Email";
 
 import { useState } from "react";
 import { PasswordResetDialogue } from "@/components/form/passwordReset_dialogue";
-// import { SubmitButton } from "@/components/form/SubmitButton";
+import { SubmitButton } from "@/components/form/SubmitButton";
 
 export const Forget_Password = () => {
   const [open, setOpen] = useState(false);

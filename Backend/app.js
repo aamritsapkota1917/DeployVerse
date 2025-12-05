@@ -6,8 +6,13 @@ import cookieParser from "cookie-parser";
 import errorHandler from "./Middlewares/errorHandler.js";
 import loginRoute from "./Routes/loginRoute.js";
 import userRoute from "./Routes/userRoute.js";
+import blogRoute from "./Routes/blogRoute.js";
 import cors from "cors";
-import { info_logger_middleware } from "./Middlewares/infoLogger.js";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cookieParser());
@@ -19,6 +24,8 @@ app.use(
 );
 app.use(express.urlencoded({ extended: false }));
 
+app.use("/uploads", express.static(join(__dirname, "uploads")));
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -29,11 +36,9 @@ mongoose
   });
 
 app.use(express.json());
-
-app.use(info_logger_middleware);
-
 app.use("/api/auth", loginRoute);
 app.use("/api/user", userRoute);
+app.use("/api/blogs", blogRoute);
 app.use(errorHandler);
 
 const Port = process.env.PORT || 5000;

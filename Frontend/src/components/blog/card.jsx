@@ -11,20 +11,20 @@ export const BlogCard = ({ data }) => {
             <AvatarImage src={data.avatar_url} />
             <AvatarFallback>CS</AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium">{data.author_name}</span>
+          <span className="text-sm font-medium">{data.author?.name}</span>
           <span className="text-muted-foreground mx-1">in</span>
-          <span className="text-sm font-medium">{data.publication_name}</span>
+          <span className="text-sm font-medium">{data.topics?.[0]}</span>
         </div>
         <h2 className="text-xl font-bold mb-2">{data.title}</h2>
         <p className="text-muted-foreground mb-4">{data.description}</p>
 
         <CardFooter className="mt-4 flex items-center  justify-start text-muted-foreground gap-5 p-0 ">
           <span className="flex items-center space-x-1">
-            <span>{data.created_date}</span>
+            <span>{new Date(data.createdAt).toLocaleDateString()}</span>
           </span>
           <span className="flex items-center space-x-1">
-            <HandIcon className="w-4 h-4" />
-            <span>{data.likes}K</span>
+            {/* <HandIcon className="w-4 h-4" /> */}
+            {/* <span>{data.likes}K</span> */}
           </span>
           <span className="flex items-center space-x-1">
             <ReplyIcon className="w-4 h-4" />
@@ -40,7 +40,7 @@ export const BlogCard = ({ data }) => {
       </div>
       <div className=" hidden md:flex  mt-4 md:mt-0 md:ml-4 flex-1 basis-1/3">
         <img
-          src={data.image_url}
+          src={data.image}
           alt="Needle and Thread"
           className="max-w-24 max-h-24  md:max-w-52 md:max-h-52  object-cover rounded"
         />
