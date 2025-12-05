@@ -16,58 +16,60 @@ export const publishBlog = async (tags) => {
   };
 
   const getFirstSentence = (doc) => {
-    // Convert object to array and sort by meta.order
     const blocks = Object.values(doc).sort((a, b) => a.meta.order - b.meta.order);
 
     for (const block of blocks) {
       const node = block?.value?.[0];
 
-      if (node?.type === "paragraph" && Array.isArray(node.children)) {
-        // Join all text pieces inside the paragraph
-        const text = node.children
-          .map((c) => c.text || "")
-          .join("")
-          .trim();
+      if (!node?.children) continue;
 
-        if (text.length > 0) {
-          // Extract only the first sentence safely
-          const match = text.match(/[^.!?]+[.!?]?/);
-          return match ? match[0].trim() : text;
-        }
-      }
+      const text = node.children
+        .map((c) => c.text || "")
+        .join("")
+        .trim();
+
+      if (!text) continue;
+
+      // Extract first sentence
+      const match = text.match(/[^.!?]+[.!?]?/);
+      return match ? match[0].trim() : text;
     }
 
     return "";
   };
 
-  const getDescription = (doc) => {
+  const getDescription = (doc, limit = 119) => {
     const blocks = Object.values(doc).sort((a, b) => a.meta.order - b.meta.order);
 
-    let seenFirstSentence = false;
+    let seenFirst = false;
+    let description = "";
 
     for (const block of blocks) {
       const node = block?.value?.[0];
 
-      if (node?.type === "paragraph" && Array.isArray(node.children)) {
-        const text = node.children
-          .map((c) => c.text || "")
-          .join("")
-          .trim();
+      if (!node?.children) continue;
 
-        if (!text) continue; // skip empty paragraphs
+      const text = node.children
+        .map((c) => c.text || "")
+        .join("")
+        .trim();
 
-        if (!seenFirstSentence) {
-          // First real text = title → skip it
-          seenFirstSentence = true;
-          continue;
-        }
+      if (!text) continue; // skip empty blocks
 
-        // This is the next non-empty paragraph → description
-        return text;
+      if (!seenFirst) {
+        seenFirst = true; // skip first non-empty block (title)
+        continue;
       }
+
+      // Add text until limit is reached
+      const remaining = limit - description.length;
+      if (remaining <= 0) break;
+
+      description += text.slice(0, remaining) + " ";
     }
 
-    return "";
+    const finalText = description.trim();
+    return finalText.length >= limit ? finalText.slice(0, limit) + "..." : finalText;
   };
 
   const title = getFirstSentence(blogData);
