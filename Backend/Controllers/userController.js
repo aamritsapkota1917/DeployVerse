@@ -18,21 +18,13 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ msg: "Unregistered Email" });
   if (!user.isVerified)
-    return res
-      .status(400)
-      .json({ msg: "unverified users can't change password" });
-  if (user.isOauth)
-    return res
-      .status(400)
-      .json({ msg: "can't change password of oauth login" });
+    return res.status(400).json({ msg: "unverified users can't change password" });
+  if (user.isOauth) return res.status(400).json({ msg: "can't change password of oauth login" });
   const token = generateJwtToken(user._id);
   if (!token) throw new Error("error while generating token");
   console.log(token);
   const addedToken = await Token.create({ token, auth: false });
-  if (!addedToken)
-    return res
-      .status(500)
-      .json({ msg: "error while saving token to database" });
+  if (!addedToken) return res.status(500).json({ msg: "error while saving token to database" });
   const mailContent = {
     subject: "Password Reset",
     message: resetEmailTemplate(process.env.CLIENT_URL, token),
@@ -49,8 +41,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   if (!dbToken) return res.status(404).json({ msg: "no such token found" });
 
   const verifiedToken = verifyJwtToken(dbToken.token);
-  if (!verifiedToken)
-    return res.status(400).json({ msg: "invalid or expired token" });
+  if (!verifiedToken) return res.status(400).json({ msg: "invalid or expired token" });
 
   const user = await User.findById(verifiedToken.data);
   if (!user) return res.status(404).json({ msg: "no user found" });
@@ -63,9 +54,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "none", // Set this according to your needs, 'lax' is a good default
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: process.env.DOMAIN,
+    domain: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined,
   });
   res.status(200).json({ msg: "Password reset completed", user });
 });
@@ -73,26 +64,17 @@ export const resetPassword = asyncHandler(async (req, res) => {
 export const changePassword = asyncHandler(async (req, res) => {
   const { newPassword, oldPassword } = req.body;
   if (!newPassword || !oldPassword)
-    return res
-      .status(400)
-      .json({ msg: "Both old and new password must be provided" });
+    return res.status(400).json({ msg: "Both old and new password must be provided" });
   if (newPassword === oldPassword)
-    return res
-      .status(400)
-      .json({ msg: "New password cannot be same old password" });
-  const isOldPasswordCorrect = await bcrypt.compare(
-    oldPassword,
-    req.user.password
-  );
-  if (!isOldPasswordCorrect)
-    return res.status(400).json({ msg: "old password is incorrect" });
+    return res.status(400).json({ msg: "New password cannot be same old password" });
+  const isOldPasswordCorrect = await bcrypt.compare(oldPassword, req.user.password);
+  if (!isOldPasswordCorrect) return res.status(400).json({ msg: "old password is incorrect" });
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
   const user = await User.findByIdAndUpdate(req.user._id, {
     password: hashedPassword,
   });
-  if (!user)
-    return res.status(400).json({ msg: "password couldn't be changed" });
+  if (!user) return res.status(400).json({ msg: "password couldn't be changed" });
   res.status(200).json({ msg: "Password succesfully changed!" });
 });

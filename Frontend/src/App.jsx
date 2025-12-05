@@ -12,43 +12,43 @@ import axios from "axios";
 import Write_blog from "./pages/write_blog";
 
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+axios.defaults.baseURL = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <Homepage />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
 
   {
     path: "/login",
     element: <LoginForm />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
   {
     path: "/signup",
     element: <SignupForm />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
   {
     path: "/forget_password",
     element: <Forget_Password />,
-    errorElement: <ErrorPage />,
+    //  errorElement: <ErrorPage />,
   },
   {
     path: "/reset-password/:token",
     element: <Reset_password />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
   {
     path: "/reset-password/:token",
     element: <Reset_password />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
   {
     path: "/blog/new",
     element: <Write_blog />,
-    errorElement: <ErrorPage />,
+    // errorElement: <ErrorPage />,
   },
 ]);

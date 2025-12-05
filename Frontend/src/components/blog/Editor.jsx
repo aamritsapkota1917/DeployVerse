@@ -16,6 +16,8 @@ import Toolbar, { DefaultToolbarRender } from "@yoopta/toolbar";
 import LinkTool, { DefaultLinkToolRender } from "@yoopta/link-tool";
 import Image from "@yoopta/image";
 
+import { uploadImage } from "../../api/blogs.js";
+
 import { useEffect, useMemo, useRef } from "react";
 
 const plugins = [
@@ -44,15 +46,18 @@ const plugins = [
   Image.extend({
     options: {
       async onUpload(file) {
-        // const data = await uploadImage(file, 'image');
-        // return {
-        //   src: data.secure_url,
-        //   alt: 'image',
-        //   sizes: {
-        //     width: data.width,
-        //     height: data.height,
-        //   },
-        // };
+        console.log("Uploading file:", file);
+
+        const data = await uploadImage(file);
+        console.log(data);
+        return {
+          src: data.image,
+          alt: "image",
+          // sizes: {
+          //   width: data.width,
+          //   height: data.height,
+          // },
+        };
       },
     },
   }),
