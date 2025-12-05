@@ -56,9 +56,10 @@ export const callback = async (req, res) => {
         path: "/",
         httpOnly: true,
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-        sameSite: "none", // Set this according to your needs, 'lax' is a good default
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        // Set this according to your needs, 'lax' is a good default
         secure: process.env.NODE_ENV === "production", // Set secure to true in production
-        domain: process.env.DOMAIN,
+        domain: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined,
       });
 
       // res
@@ -75,7 +76,7 @@ export const callback = async (req, res) => {
       throw new Error("Error while registering user");
     }
   } catch (error) {
-     console.log(error);
+    console.log(error);
     res.status(500).send("Internal Server Error");
   }
 };
@@ -89,8 +90,7 @@ export const callback = async (req, res) => {
 // ! controller for manual regestration
 export const manualRegistration = asyncHandler(async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
-  if (!firstName || !lastName || !email || !password)
-    throw new Error("all field shuld be filled");
+  if (!firstName || !lastName || !email || !password) throw new Error("all field shuld be filled");
   const userData = {
     name: firstName + " " + lastName,
     email,
@@ -134,9 +134,9 @@ export const verifyUser = asyncHandler(async (req, res) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "none", // Set this according to your needs, 'lax' is a good default
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: process.env.DOMAIN,
+    domain: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined,
   });
   // res
   //   .status(200)
@@ -175,9 +175,7 @@ export const login = asyncHandler(async (req, res, next) => {
   if (!email || !password) throw new Error("All field should be filled");
   const user = await User.findOne({ email });
   if (!user) {
-    return res
-      .status(400)
-      .json({ msg: "please enter valid email and password" });
+    return res.status(400).json({ msg: "please enter valid email and password" });
   }
 
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
@@ -195,9 +193,9 @@ export const login = asyncHandler(async (req, res, next) => {
     path: "/",
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-    sameSite: "none", // Set this according to your needs, 'lax' is a good default
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Set this according to your needs, 'lax' is a good default
     secure: process.env.NODE_ENV === "production", // Set secure to true in production
-    domain: process.env.DOMAIN,
+    domain: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined,
   });
 
   res.status(200).json({
@@ -213,9 +211,9 @@ export const logout = asyncHandler(async (req, res) => {
   res.clearCookie("token", {
     path: "/",
     httpOnly: true,
-    sameSite: "none", // keep same as login for consistency
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // keep same as login for consistency
     secure: process.env.NODE_ENV === "production", // secure in production
-    domain: process.env.DOMAIN, // must match cookie domain set during login
+    domain: process.env.NODE_ENV === "production" ? process.env.DOMAIN : undefined, // must match cookie domain set during login
   });
   res.status(200).json({ msg: "succesfully loggedOut" });
 });
